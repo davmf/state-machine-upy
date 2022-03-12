@@ -1,3 +1,5 @@
+from typing import *
+
 import asyncio
 
 async def tick():
@@ -7,120 +9,136 @@ async def tick():
 queue = asyncio.Queue()
 
 
-def put_event(n):
+def put_event(name: str, n: int):
     queue.put_nowait(n)
-    print("Put EVENT", n)
+    print("EVENT PUT", name, n)
 
 
-async def get_event() -> int:    
+def reuse_event(n):
+    queue.put_nowait(n)
+#    print("Reuse EVENT", n)
+
+
+async def get_event(name: str) -> int:    
     event: int = await queue.get()
-    print("Get EVENT", event)
+    print("EVENT GET", name, event)
     return event
 
 
-async def transition_to(new_state, current_state_task = None):
-    if current_state_task is not None:
-        current_state_task.cancel()
-        await current_state_task
+class State:
 
-    state = new_state
-    return state, asyncio.create_task(state())
+    def __init__(self, name):
+        self.name = name
+        self.task = asyncio.create_task(name()) if name is not None else None
+
+    async def transition_to(self, new_state: Awaitable) -> None:
+        if self.name is None:
+            print("TRANSITION", "initial" , new_state.__name__)
+        else:
+            print("TRANSITION", self.name.__name__ , new_state.__name__)
+            self.task.cancel()
+            await self.task
+
+        self.name = new_state
+        self.task = asyncio.create_task(new_state())
 
 
-async def state_machine():
+def initial() -> State:
+    return State(None)
 
-    name = "state_machine"
 
-    async def do():
+async def state_machine() -> None:
+
+    NAME = "SM"
+
+    async def do() -> None:
         while True:
-            print("state_machine do")
+            print("DO", NAME)
             await tick()
-            put_event(2)
+            put_event(NAME, 2)
 
     async def manage():
-        state, state_task = await transition_to(state_machine_A)
+        state = initial()
+        await state.transition_to(state_machine_A)
 
         while True:
-            event = await get_event()
-            print(name, "gets event", event)
+            event = await get_event(NAME)
 
-            if state == state_machine_A:
+            if state.name == state_machine_A:
                 if event == 1:
-                    print("A -> B")
-                    state, state_task = await transition_to(state_machine_B, state_task)
+                    await state.transition_to(state_machine_B)
                 else:
-                    put_event(event)
-            elif state == state_machine_B:
+                    reuse_event(event)
+            elif state.name == state_machine_B:
                 if event == 2:
-                    print("B -> A")
-                    state, state_task = await transition_to(state_machine_A, state_task)
+                    await state.transition_to(state_machine_A)
                 else:
-                    put_event(event)
+                    reuse_event(event)
 
             await tick()
 
 
     async def state_machine_A():
 
-        name = "state_machine_A"
+        NAME = "A"
 
         def entry():
-            print(name, "entry")
+            print("ENTRY", NAME)
 
         def exit_():
-            print(name, "exit")
+            print("EXIT", NAME)
 
         async def do():
             try:
                 while True:                
-                    print(name, "do")
-                    put_event(1)
+                    print("DO", NAME)
+                    put_event(NAME, 1)
                     await tick()
 
             except asyncio.CancelledError:
                 pass
 
         async def manage() -> int:
-            state, state_task = await transition_to(state_AA)
+            state = initial()
+            await state.transition_to(state_AA)
 
             try:
                 while True:
-                    event = await get_event()
-                    print(name, "gets event", event)
+                    event = await get_event(NAME)
 
                     if state == state_AA:
                         if event == 2:
-                            print("AA -> AB")
-                            state, state_task = await transition_to(state_AB, state_task)
+                            await state.transition_to(state_AB)
                         else:
-                            put_event(event)
+                            reuse_event(event)
                     elif state == state_AB:
                         if event == 2:
                             put_event(1)
                         elif event == 3:
-                            print("AB -> AA")
-                            state, state_task = await transition_to(state_AA, state_task)
+                            await state.transition_to(state_AA)
                         else:
-                            put_event(event)
+                            reuse_event(event)
 
                     await tick()
 
             except asyncio.CancelledError:
-                state_task.cancel()
-                await state_task
+                state.task.cancel()
+                await state.task
 
         async def state_AA():
 
+            NAME = "AA"
+
             def entry():
-                print("state_AA entry")
+                print("ENTRY", NAME)
 
             def exit_():
-                print("state_AA exit")
+                print("EXIT", NAME)
 
             async def do():
                 try:
                     while True:
-                        print("state_AA do")
+                        print("DO", NAME)
                         await tick()
                 except asyncio.CancelledError:
                     pass
@@ -138,18 +156,18 @@ async def state_machine():
 
         async def state_AB():
 
-            cancel = False
+            NAME = "AB"
             
             def entry():
-                print("state_AB entry")
+                print("ENTRY", NAME)
 
             def exit_():
-                print("state_AB exit")
+                print("EXIT", NAME)
 
             async def do():
                 try:
                     while True:
-                        print("state_AB do")
+                        print("DO", NAME)
                         await tick()
                         put_event(3)
                 except asyncio.CancelledError:
@@ -174,7 +192,6 @@ async def state_machine():
             await asyncio.gather(do_task, manage_task)
 
         except asyncio.CancelledError:
-            print("Cancel", name)
             do_task.cancel()
             manage_task.cancel()
 
@@ -182,59 +199,68 @@ async def state_machine():
 
     async def state_machine_B():
 
-        name = "state_machine_B"
-
+        NAME = "B"
+        
         def entry():
-            print("state_machine_B entry")
+            print("ENTRY", NAME)
 
         def exit_():
-            print("state_machine_B exit")
+            print("EXIT", NAME)
 
         async def do():
             try:
                 while True:                
-                    print("state_machine_B do")
+                    print("DO", NAME)
                     await tick()
-                    put_event(4)
-            finally:
+                    put_event(NAME, 4)
+
+            except asyncio.CancelledError:
                 pass
 
         async def manage() -> int:
-            state, state_task = await transition_to(state_BA)
+            state = initial()
+            await state.transition_to(state_BA)
 
-            while True:
-                event = await get_event()
-                print(name, "gets event", event)
+            try:
+                while True:
+                    event = await get_event(NAME)
 
-                if state == state_BA:
-                    if event == 4:
-                        state, state_task = await transition_to(state_BB, state_task)
-                    elif event == 5:
-                        put_event(2)
-                    else:
-                        put_event(event)
-                elif state == state_BB:
-                    if event == 4:
-                        put_event(2)
-                    else:
-                        put_event(event)
+                    if state == state_BA:
+                        if event == 4:
+                            await state.transition_to(state_BB)
+                        elif event == 5:
+                            put_event(NAME, 2)
+                        else:
+                            reuse_event(event)
+                    elif state == state_BB:
+                        if event == 4:
+                            put_event(NAME, 2)
+                        else:
+                            reuse_event(event)
 
-                await tick()
+                    await tick()
+
+            except asyncio.CancelledError:
+                state.task.cancel()
+                await state.task
 
         async def state_BA():
 
+            NAME = "BA"
+            
             def entry():
-                print("state_BA entry")
+                print("ENTRY", NAME)
 
             def exit_():
-                print("state_BA exit")
+                print("EXIT", NAME)
 
             async def do():
                 try:
                     while True:
-                        print("state_BA do")
+                        print(NAME)
                         await tick()
-                finally:
+
+                except asyncio.CancelledError:
                     pass
 
             entry()
@@ -248,21 +274,24 @@ async def state_machine():
 
             exit_()
 
-        async def state_AB():
+        async def state_BB():
 
+            NAME = "BB"
+            
             def entry():
-                print("state_BB entry")
+                print("ENTRY", NAME)
 
             def exit_():
-                print("state_BB exit")
+                print("EXIT", NAME)
 
             async def do():
                 try:
                     while True:
-                        print("state_BB do")
+                        print("DO", NAME)
                         await tick()
-                        put_event(3)
-                finally:
+                        put_event(NAME, 3)
+
+                except asyncio.CancelledError:
                     pass
 
             entry()

@@ -4,34 +4,34 @@ state state_machine {
     state state_machine_A {
         state state_AA
         state state_AB
-        state state_AB : do: EVENT_3
+        state state_AB : do: EVENT_2
 
         [*] --> state_AA
-        state_AA --> state_AB : EVENT_2
-        state_AB --> state_AA : EVENT_3
-        state_AB --> [*] : EVENT_2
+        state_AA --> state_AB : EVENT_1
+        state_AB --> state_AA : EVENT_2
+        state_AB --> [*] : EVENT_1
     }
-    state state_machine_A : do: EVENT_1
+    state state_machine_A : do: EVENT_0
 
     state state_machine_B {
         state state_BA
-        state state_BA : do: EVENT_5
+        state state_BA : do: EVENT_4
 
         state state_BB
 
         [*] --> state_BA
-        state_BA --> state_BB : EVENT_4
-        state_BA --> [*] : EVENT_5
-        state_BB --> [*] : EVENT_4
+        state_BA --> state_BB : EVENT_3
+        state_BA --> [*] : EVENT_4
+        state_BB --> [*] : EVENT_3
     }
-    state state_machine_B : do: EVENT_4
+    state state_machine_B : do: EVENT_3
 
     [*] --> state_machine_A
-    state_machine_A --> state_machine_B : EVENT_1
-    state_machine_B --> state_machine_A : EVENT_2
+    state_machine_A --> state_machine_B : EVENT_0
+    state_machine_B --> state_machine_A : EVENT_1
 }
 
-state state_machine : do: EVENT_2
+state state_machine : do: EVENT_1
 
 
 @enduml

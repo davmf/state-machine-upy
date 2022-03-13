@@ -6,9 +6,6 @@ async def tick():
     await asyncio.sleep(1)  # Pause 1s
 
 
-queue = asyncio.Queue()
-
-
 def put_event(name: str, n: int):
     queue.put_nowait(n)
     print("EVENT PUT", name, n)
@@ -25,9 +22,11 @@ async def get_event(name: str) -> int:
     return event
 
 
+events = [False, False, False, False, False]
+
 class State:
 
-    def __init__(self, name):
+    def __init__(self, name, events):
         self.name = name
         self.task = asyncio.create_task(name()) if name is not None else None
 
@@ -98,7 +97,7 @@ async def state_machine() -> None:
             except asyncio.CancelledError:
                 pass
 
-        async def manage() -> int:
+        async def manage():
             state = initial()
             await state.transition_to(state_AA)
 

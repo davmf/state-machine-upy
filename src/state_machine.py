@@ -8,17 +8,17 @@ async def tick():
 
 class Events:
 
-    EV0 = 2 ^ 0
-    EV1 = 2 ^ 1
-    EV2 = 2 ^ 2
-    EV3 = 2 ^ 3
-    EV4 = 2 ^ 4
+    EV0 = pow(2, 0)
+    EV1 = pow(2, 1)
+    EV2 = pow(2, 2)
+    EV3 = pow(2, 3)
+    EV4 = pow(2, 4)
 
     events: int = 0
 
     def set_(event: int) -> None:
         Events.events |= event
-        print("set", event)
+        print("SET EV", event)
 
     def is_set(event: int) -> bool:
         """Also clears the event if it is set.
@@ -42,11 +42,11 @@ class Events:
 
 class State:
 
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self.name = name
         self.task = asyncio.create_task(name()) if name is not None else None
 
-    async def transition_to(self, new_state: Awaitable) -> None:
+    async def transition_to(self, new_state: Awaitable) -> "State":
         if self.name is None:
             print("TRANSITION", "initial" , new_state.__name__)
         else:
@@ -54,8 +54,7 @@ class State:
             self.task.cancel()
             await self.task
 
-        self.name = new_state
-        self.task = asyncio.create_task(new_state())
+        return State(new_state)
 
 
 def initial() -> State:
@@ -74,18 +73,17 @@ async def state_machine() -> None:
 
     async def manage():
         state = initial()
-        await state.transition_to(state_machine_A)
+        state = await state.transition_to(state_machine_A)
 
         while True:
-            await Events.get(Events.EV1 | Events.EV2)
+            await Events.get(Events.EV0 | Events.EV1)
 
             if state.name == state_machine_A:
-                if Events.is_set(Events.EV1):
-                    await state.transition_to(state_machine_B)
+                if Events.is_set(Events.EV0):
+                    state = await state.transition_to(state_machine_B)
             elif state.name == state_machine_B:
                 if Events.is_set(Events.EV1):
-                    await state.transition_to(state_machine_A)
-
+                    state = await state.transition_to(state_machine_A)
 
     async def state_machine_A():
 
@@ -101,7 +99,7 @@ async def state_machine() -> None:
             try:
                 while True:                
                     print("DO", NAME)
-                    Events.set_(Events.EV1)
+                    Events.set_(Events.EV0)
                     await tick()
 
             except asyncio.CancelledError:
@@ -109,7 +107,7 @@ async def state_machine() -> None:
 
         async def manage():
             state = initial()
-            await state.transition_to(state_AA)
+            state = await state.transition_to(state_AA)
 
             try:
                 while True:
@@ -117,12 +115,12 @@ async def state_machine() -> None:
 
                     if state == state_AA:
                         if Events.is_set(Events.EV2):
-                            await state.transition_to(state_AB)
+                            state = await state.transition_to(state_AB)
                     elif state == state_AB:
                         if Events.is_set(Events.EV2):
                             Events.set_(Events.EV1)
                         elif Events.is_set(Events.EV3):
-                            await state.transition_to(state_AA)
+                            state = await state.transition_to(state_AA)
 
             except asyncio.CancelledError:
                 state.task.cancel()

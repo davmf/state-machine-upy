@@ -8,11 +8,11 @@ async def tick():
 
 class Events:
 
-    EV0 = pow(2, 0)
-    EV1 = pow(2, 1)
-    EV2 = pow(2, 2)
-    EV3 = pow(2, 3)
-    EV4 = pow(2, 4)
+    EV1 = pow(2, 0)
+    EV2 = pow(2, 1)
+    EV3 = pow(2, 2)
+    EV4 = pow(2, 3)
+    EV5 = pow(2, 4)
 
     events: int = 0
 
@@ -42,11 +42,11 @@ class Events:
 
 class State:
 
-    def __init__(self, name) -> None:
+    def __init__(self, name = None) -> None:
         self.name = name
         self.task = asyncio.create_task(name()) if name is not None else None
 
-    async def transition_to(self, new_state: Awaitable) -> "State":
+    async def transition_to(self, new_state: Awaitable) -> None:
         if self.name is None:
             print("TRANSITION", "initial" , new_state.__name__)
         else:
@@ -54,11 +54,8 @@ class State:
             self.task.cancel()
             await self.task
 
-        return State(new_state)
-
-
-def initial() -> State:
-    return State(None)
+        self.name = new_state.__name__
+        self.task = asyncio.create_task(new_state())
 
 
 async def state_machine() -> None:
@@ -72,18 +69,18 @@ async def state_machine() -> None:
             await asyncio.sleep(5)
 
     async def manage():
-        state = initial()
-        state = await state.transition_to(state_machine_A)
+        state = State()
+        await state.transition_to(state_machine_A)
 
         while True:
             await Events.get(Events.EV0 | Events.EV1)
 
             if state.name == state_machine_A:
                 if Events.is_set(Events.EV0):
-                    state = await state.transition_to(state_machine_B)
+                    await state.transition_to(state_machine_B)
             elif state.name == state_machine_B:
                 if Events.is_set(Events.EV1):
-                    state = await state.transition_to(state_machine_A)
+                    await state.transition_to(state_machine_A)
 
     async def state_machine_A():
 
@@ -106,21 +103,21 @@ async def state_machine() -> None:
                 pass
 
         async def manage():
-            state = initial()
-            state = await state.transition_to(state_AA)
+            state = State()
+            await state.transition_to(state_AA)
 
             try:
                 while True:
-                    await Events.get(Events.EV2 | Events.EV3)
+                    await Events.get(Events.EV1 | Events.EV2)
 
                     if state == state_AA:
-                        if Events.is_set(Events.EV2):
-                            state = await state.transition_to(state_AB)
+                        if Events.is_set(Events.EV1):
+                            await state.transition_to(state_AB)
                     elif state == state_AB:
                         if Events.is_set(Events.EV2):
-                            Events.set_(Events.EV1)
+                            Events.set_(Events.EV0)
                         elif Events.is_set(Events.EV3):
-                            state = await state.transition_to(state_AA)
+                            await state.transition_to(state_AA)
 
             except asyncio.CancelledError:
                 state.task.cancel()
@@ -219,7 +216,7 @@ async def state_machine() -> None:
                 pass
 
         async def manage() -> int:
-            state = initial()
+            state = State()
             await state.transition_to(state_BA)
 
             try:

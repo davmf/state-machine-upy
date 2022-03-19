@@ -1,33 +1,31 @@
 import asyncio
-from modulefinder import Module
 from typing import *
+from logger import LoggingHandler
 
 
-class State:
+class State(LoggingHandler):
 
-    def __init__(self, name = None) -> None:
-        self.label = ""
-        self.name = name
-        self.task = asyncio.create_task(name()) if name is not None else None        
+    def __init__(self) -> None:
+        super().__init__()
 
-    async def transition_to(self, new_state) -> "State":
+    def transition_to(self, new_state) -> None:
         self.exit()
         new_state.enter()
         new_state.do()
 
     def enter(self):
-        print("ENTRY", self.__name__)
+        self.log.info("")
 
     def exit(self):
         self.do_task.cancel()
-        print("EXIT", self.__name__)
+        self.log.info("")
 
     def do(self):
         self.do_task = asyncio.create_task(self._do())
 
     async def _do(self):
         try:
-            print("DO", self.__name__)
+            print("DO")
 
             while True:
                 await asyncio.sleep(1)

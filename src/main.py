@@ -1,27 +1,24 @@
-from typing import *
-from state_machines import StateMachineA, StateMachineB
-from events import Events
-from state_machine import StateMachine
-from state import State
-
 import asyncio
+from typing import *
+from events import Events
+from state import State
+from state_machine import StateMachine
+from state_machines import StateMachineA, StateMachineB
 
 
-class Main(StateMachine):
+class Main(State):
 
     def __init__(self) -> None:
-        initial = State()
-        state_machine_A = StateMachineA()
-        state_machine_B = StateMachineB()
-        self.state = initial
+        super().__init__()
+        self.state_machine_A = StateMachineA()
+        self.state_machine_B = StateMachineB()
+        self.state = State()
 
-    async def run(self) -> None:
-        do_task = asyncio.create_task(self._do())
-        manage_task = asyncio.create_task(self._manage())
-        await asyncio.gather(do_task, manage_task)
+    def enter(self):
+        pass
 
-    async def _do(self) -> None:
-        print("DO", self.name)
+    async def do(self) -> None:
+        self.log.info("")
         await asyncio.sleep(4)
         Events.set_(Events.EV2)
         await asyncio.sleep(4)
@@ -34,8 +31,8 @@ class Main(StateMachine):
         while True:
             await asyncio.sleep(1)
 
-    async def _manage(self):
-        print("MANAGE", NAME)
+    async def manage(self):
+        self.log.info("")
         self.state.transition_to(self.state_machine_A)
 
         while True:
@@ -47,10 +44,13 @@ class Main(StateMachine):
             elif self.state == self.state_machine_B:
                 if Events.is_set(Events.EV2):
                     await self.state.transition_to(self.state_machine_A)
-     
+    
+    def exit(self):
+        pass
+
 
 async def main():
-    state_machine = StateMachine()
+    state_machine = Main()
     asyncio.create_task(state_machine.run())
 
     while True:

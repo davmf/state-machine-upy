@@ -28,7 +28,9 @@ state state_machine {
 
     [*] --> state_machine_A
     state_machine_A --> state_machine_B : EVENT_1
+    state_machine_A --> state_machine_B
     state_machine_B --> state_machine_A : EVENT_2
+    state_machine_B --> state_machine_A
 }
 
 state state_machine : do: EVENT_2

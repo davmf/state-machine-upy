@@ -2,7 +2,7 @@ import asyncio
 from typing import *
 from events import Events
 from state import State
-from states import MainInitial, MainA, MainB
+from states import MainInitial, MainA, MainB, MainAFinal, MainBFinal
 
 
 class Main(State):
@@ -19,9 +19,17 @@ class Main(State):
 
         while True:
             await asyncio.sleep(2)
+            Events.set_(Events.EV1)
+            await asyncio.sleep(2)
             Events.set_(Events.EV2)
             await asyncio.sleep(2)
-            Events.set_(Events.EV1)
+            Events.set_(Events.EV2)
+            await asyncio.sleep(2)
+            Events.set_(Events.EV2)
+            await asyncio.sleep(2)
+            Events.set_(Events.EV4)
+            await asyncio.sleep(2)
+            Events.set_(Events.EV4)
 
         while True:
             await asyncio.sleep(1)
@@ -31,13 +39,13 @@ class Main(State):
         self.state = await self.state.transition_to(self.state_A)
 
         while True:
-            await Events.get(Events.EV1 | Events.EV2)
+            await Events.get(Events.EV1 | Events.EV2 | Events.MainAFinal | Events.MainBFinal)
 
             if self.state == self.state_A:
-                if Events.is_set(Events.EV1):
+                if Events.is_set(Events.EV1) or Events.is_set(Events.MainAFinal):
                     self.state = await self.state.transition_to(self.state_B)
             elif self.state == self.state_B:
-                if Events.is_set(Events.EV2):
+                if Events.is_set(Events.EV2) or Events.is_set(Events.MainBFinal):
                     self.state = await self.state.transition_to(self.state_A)   
 
 

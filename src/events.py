@@ -9,6 +9,8 @@ class Events:
     EV3 = pow(2, 2)
     EV4 = pow(2, 3)
     EV5 = pow(2, 4)
+    MainAFinal = pow(2, 5)
+    MainBFinal = pow(2, 6)
 
     events: int = 0
 

@@ -110,8 +110,9 @@ class MainBFinal(State):
         super().enter()
         Events.set_(Events.MainBFinal)
 
+
 class MainAA(State):
-    pass    
+    pass
 
 
 class MainAB(State):
@@ -119,7 +120,7 @@ class MainAB(State):
 
 
 class MainBA(State):
-    pass    
+    pass
 
 
 class MainBB(State):

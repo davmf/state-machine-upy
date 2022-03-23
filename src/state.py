@@ -2,6 +2,7 @@ import asyncio
 from typing import *
 
 import logger
+from events import Events
 
 
 class State:
@@ -31,6 +32,8 @@ class State:
     def _exit(self):
         if self.initial:
             self.state = self.initial
+
+        Events.clear_all()
 
     async def exit(self):
         self.log.info("")

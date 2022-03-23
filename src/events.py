@@ -18,21 +18,23 @@ class Events:
         Events.events |= event
         print("SET EV", event)
 
-    def is_set(event: int) -> bool:
-        """Also clears the event if it is set.
+    def is_set(event_mask: int) -> bool:
+        """Also clears the event(s) if set.
         """        
-        if Events.events & event:
-            Events.clear(event)
+        if Events.events & event_mask:
+            Events.clear(event_mask)
             return True
         else:
             return False
 
-    def clear(event: int) -> None:
-        Events.events &= ~event
+    def clear(event_mask: int) -> None:
+        Events.events &= ~event_mask
 
     def clear_all() -> None:
         Events.events = 0
 
     async def get(mask: int) -> None:
+        while (Events.events & mask):
+            await asyncio.sleep(0.1)
         while not (Events.events & mask):
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)

@@ -1,40 +1,48 @@
 import asyncio
-from typing import *
+from typing import Set
+import logger
 
 
-class Events:
+class Event(asyncio.Event):
 
-    EV1 = pow(2, 0)
-    EV2 = pow(2, 1)
-    EV3 = pow(2, 2)
-    EV4 = pow(2, 3)
-    EV5 = pow(2, 4)
-    MainAFinal = pow(2, 5)
-    MainBFinal = pow(2, 6)
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self.name = name
+        self.log = logger.init_logging(type(self).__name__)
+    
+    def set(self) -> None:
+        super().set()
+        self.log.info(self.name)
 
-    events: int = 0
+    def __str__(self) -> str:
+        return self.name
 
-    def set_(event: int) -> None:
-        Events.events |= event
-        print("SET EV", event)
 
-    def is_set(event_mask: int) -> bool:
-        """Also clears the event(s) if set.
-        """        
-        if Events.events & event_mask:
-            Events.clear(event_mask)
-            return True
-        else:
-            return False
 
-    def clear(event_mask: int) -> None:
-        Events.events &= ~event_mask
+EV1 = Event("EV1")
+EV2 = Event("EV2")
+EV3 = Event("EV3")
+EV4 = Event("EV4")
+EV5 = Event("EV5")
+EVAF = Event("EVAF")
+EVBF = Event("EVBF")
 
-    def clear_all() -> None:
-        Events.events = 0
 
-    async def get(mask: int) -> None:
-        while (Events.events & mask):
-            await asyncio.sleep(0.1)
-        while not (Events.events & mask):
-            await asyncio.sleep(0.1)
+events: Set[Event] = {EV1, EV2, EV3, EV4, EV5, EVAF, EVBF}
+
+
+async def wait_for_any(*events: Event) -> Event:
+
+    while True:
+        for event in events:
+            if event.is_set():
+                _clear_all()
+                return event
+
+        await asyncio.sleep(0.01)
+
+
+def _clear_all() -> None:
+
+    for event in events:
+        event.clear()

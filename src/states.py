@@ -1,8 +1,6 @@
 import asyncio
-from typing import *
 
-from events import Events
-
+from events import EV2, EV3, EV4, EV5, EVAF, EVBF, wait_for_any, Event
 import logger
 from state import State
 
@@ -11,11 +9,11 @@ class MainA(State):
 
     def __init__(self):
         super().__init__()
-        self.initial = MainAInitial()
-        self.final = MainAFinal()
-        self.state_AA = MainAA()
-        self.state_AB = MainAB()
-        self.state = self.initial
+        self.initial: State = MainAInitial()
+        self.final: State = MainAFinal()
+        self.state_AA: State = MainAA()
+        self.state_AB: State = MainAB()
+        self.state: State = self.initial
         self.log = logger.init_logging(type(self).__name__)
 
     async def manage(self):
@@ -24,15 +22,16 @@ class MainA(State):
 
         try:
             while True:
-                await Events.get(Events.EV2 | Events.EV3)
+                event: Event = await wait_for_any(EV2, EV3)
+                self.log.info(f"{event}")
 
                 if self.state == self.state_AA:
-                    if Events.is_set(Events.EV2):
+                    if event == EV2:
                         self.state = await self.state.transition_to(self.state_AB)
                 elif self.state == self.state_AB:
-                    if Events.is_set(Events.EV2):
+                    if event == EV2:
                         self.state = await self.state.transition_to(self.final)
-                    elif Events.is_set(Events.EV3):
+                    elif event == EV3:
                         self.state = await self.state.transition_to(self.state_AA)
 
         except asyncio.CancelledError:
@@ -43,11 +42,11 @@ class MainB(State):
 
     def __init__(self):
         super().__init__()
-        self.initial = MainBInitial()
-        self.final = MainBFinal()
-        self.state_BA= MainBA()
-        self.state_BB = MainBB()
-        self.state = self.initial
+        self.initial: State = MainBInitial()
+        self.final: State = MainBFinal()
+        self.state_BA: State = MainBA()
+        self.state_BB: State = MainBB()
+        self.state: State = self.initial
         self.log = logger.init_logging(type(self).__name__)
 
     async def manage(self):
@@ -56,15 +55,16 @@ class MainB(State):
 
         try:
             while True:
-                await Events.get(Events.EV4 | Events.EV5)
+                event: Event = await wait_for_any(EV4, EV5)
+                self.log.info(f"{event}")
 
                 if self.state == self.state_BA:
-                    if Events.is_set(Events.EV4):
+                    if event == EV4:
                         self.state = await self.state.transition_to(self.state_BB)
-                    elif Events.is_set(Events.EV5):
-                        Events.set_(Events.EV2)
+                    elif event == EV5:
+                        self.state = await self.state.transition_to(self.final)
                 elif self.state == self.state_BB:
-                    if Events.is_set(Events.EV4):
+                    if event == EV4:
                         self.state = await self.state.transition_to(self.final)
 
         except asyncio.CancelledError:
@@ -97,7 +97,7 @@ class MainAFinal(State):
 
     def enter(self) -> None:
         super().enter()
-        Events.set_(Events.MainAFinal)
+        EVAF.set()
 
 
 class MainBFinal(State):
@@ -108,7 +108,7 @@ class MainBFinal(State):
 
     def enter(self) -> None:
         super().enter()
-        Events.set_(Events.MainBFinal)
+        EVBF.set()
 
 
 class MainAA(State):

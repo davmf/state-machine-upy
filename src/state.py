@@ -1,21 +1,20 @@
 import asyncio
-from typing import *
+from typing import Optional
 
 import logger
-from events import Events
 
 
 class State:
 
     def __init__(self) -> None:
         self.initial = None
-        self.state = None
+        self.state: Optional["State"] = None
         self.do_task = None
         self.manage_task = None
         self.is_final = False
         self.log = logger.init_logging(type(self).__name__)
 
-    async def transition_to(self, new_state) -> "State":
+    async def transition_to(self, new_state: "State") -> "State":
         if self.state:
             await self.state.exit()
 
@@ -26,16 +25,14 @@ class State:
             new_state.do()
         return new_state
 
-    def enter(self):
+    def enter(self) -> None:
         self.log.info("")
 
-    def _exit(self):
+    def _exit(self) -> None:
         if self.initial:
             self.state = self.initial
 
-        Events.clear_all()
-
-    async def exit(self):
+    async def exit(self) -> None:
         self.log.info("")
 
         if self.do_task:
@@ -44,11 +41,11 @@ class State:
 
         self._exit()
 
-    def do(self):
+    def do(self) -> None:
         self.log.info("")
         self.do_task = asyncio.create_task(self._do())
 
-    async def _do(self):
+    async def _do(self) -> None:
         self.manage_task = asyncio.create_task(self.manage())
 
         try:
@@ -57,7 +54,7 @@ class State:
             self.manage_task.cancel()
             await self.manage_task
 
-    async def manage(self):
+    async def manage(self) -> None:
         self.log.info("")
 
         try:

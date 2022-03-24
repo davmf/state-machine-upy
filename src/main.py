@@ -1,63 +1,62 @@
 import asyncio
-from typing import *
-from events import Events
-from state import State
-from states import MainInitial, MainA, MainB
+from typing import Any
+
 import logger
+from events import EV1, EV2, EV4, Event, EVAF, EVBF, wait_for_any
+from state import State
+from states import MainA, MainB, MainInitial
+
 
 class Main(State):
 
     def __init__(self) -> None:
         super().__init__()
-        self.state_A = MainA()
-        self.state_B = MainB()
-        self.state = MainInitial()
+        self.state_A: State = MainA()
+        self.state_B: State = MainB()
+        self.state: State = MainInitial()
         self.log = logger.init_logging(type(self).__name__)
 
-    async def do(self) -> None:
+    async def run(self) -> None:
         self.log.info("")
         asyncio.create_task(self.manage())
         DELAY = 1
 
         while True:
             await asyncio.sleep(DELAY)
-            Events.set_(Events.EV1)
+            EV1.set()
             await asyncio.sleep(DELAY)
-            Events.set_(Events.EV2)
+            EV2.set()
             await asyncio.sleep(DELAY)
-            Events.set_(Events.EV2)
+            EV2.set()
             await asyncio.sleep(DELAY)
-            Events.set_(Events.EV2)
+            EV2.set()
             await asyncio.sleep(DELAY)
-            Events.set_(Events.EV4)
+            EV4.set()
             await asyncio.sleep(DELAY)
-            Events.set_(Events.EV4)
-
-        while True:
-            await asyncio.sleep(1)
+            EV4.set()
 
     async def manage(self):
         self.log.info("")
         self.state = await self.state.transition_to(self.state_A)
 
         while True:
-            await Events.get(Events.EV1 | Events.EV2 | Events.MainAFinal | Events.MainBFinal)
-            self.log.info(f"{Events.events}")
+            event: Event = await wait_for_any(EV1, EV2, EVAF, EVBF)
+            self.log.info(f"{event}")
 
             if self.state == self.state_A:
-                if Events.is_set(Events.EV1 | Events.MainAFinal):
+                if event in {EV1, EVAF}:
                     self.state = await self.state.transition_to(self.state_B)
             elif self.state == self.state_B:
-                if Events.is_set(Events.EV2 | Events.MainBFinal):
+                if event in {EV2, EVBF}:
                     self.state = await self.state.transition_to(self.state_A)   
 
 
-def start(state_machine) -> asyncio.Task:
-    return asyncio.create_task(state_machine.do())
+def start(state_machine: Main) -> asyncio.Task[Any]:
+    return asyncio.create_task(state_machine.run())
 
 
 async def main():
-    state_machine_task = start(Main())
+    state_machine_task: asyncio.Task[Any] = start(Main())
     await state_machine_task
 
 

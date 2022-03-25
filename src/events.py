@@ -29,6 +29,6 @@ def subscribe_to(events: Set[Event], event_queue: Queue[Event]) -> None:
 
 
 def publish(event: Event) -> None:
-    log.info("publish", event)
+    log.info(f"publish {event}")
     for event_queue in _event_subscribers[event]:
         event_queue.put_nowait(event)

@@ -1,5 +1,5 @@
 import asyncio
-import events
+from events import Events, subscribe_to, Event
 import logger
 from state import State
 
@@ -13,6 +13,8 @@ class MainA(State):
         self.state_AA: State = MainAA()
         self.state_AB: State = MainAB()
         self.state: State = self.initial
+        events = {Events.EV2, Events.EV3}
+        subscribe_to(events, self.event_queue)
         self.log = logger.init_logging(type(self).__name__)
 
     async def manage(self):
@@ -21,16 +23,16 @@ class MainA(State):
 
         try:
             while True:
-                event: Event = await wait_for_any(EV2, EV3)
+                event: Event = await self.event_queue.get()
                 self.log.info(f"{event}")
 
                 if self.state == self.state_AA:
-                    if event == EV2:
+                    if event == Events.EV2:
                         self.state = await self.state.transition_to(self.state_AB)
                 elif self.state == self.state_AB:
-                    if event == EV2:
+                    if event == Events.EV2:
                         self.state = await self.state.transition_to(self.final)
-                    elif event == EV3:
+                    elif event == Events.EV3:
                         self.state = await self.state.transition_to(self.state_AA)
 
         except asyncio.CancelledError:
@@ -46,6 +48,8 @@ class MainB(State):
         self.state_BA: State = MainBA()
         self.state_BB: State = MainBB()
         self.state: State = self.initial
+        events = {Events.EV4, Events.EV5}
+        subscribe_to(events, self.event_queue)
         self.log = logger.init_logging(type(self).__name__)
 
     async def manage(self):
@@ -54,16 +58,16 @@ class MainB(State):
 
         try:
             while True:
-                event: Event = await wait_for_any(EV4, EV5)
+                event: Event = await self.event_queue.get()
                 self.log.info(f"{event}")
 
                 if self.state == self.state_BA:
-                    if event == EV4:
+                    if event == Events.EV4:
                         self.state = await self.state.transition_to(self.state_BB)
-                    elif event == EV5:
+                    elif event == Events.EV5:
                         self.state = await self.state.transition_to(self.final)
                 elif self.state == self.state_BB:
-                    if event == EV4:
+                    if event == Events.EV4:
                         self.state = await self.state.transition_to(self.final)
 
         except asyncio.CancelledError:

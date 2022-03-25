@@ -13,7 +13,7 @@ class State:
         self.do_task = None
         self.manage_task = None
         self.is_final = False
-        self.event_buffer: Set[str] = set()
+        self.event_queue: asyncio.Queue[Event] = asyncio.Queue()
         self.log = logger.init_logging(type(self).__name__)
 
     async def transition_to(self, new_state: "State") -> "State":

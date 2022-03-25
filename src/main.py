@@ -2,7 +2,7 @@ import asyncio
 from typing import Any
 
 import logger
-from events import EV1, EV2, EV4, Event, EVAF, EVBF, wait_for_any
+from events import Events, subscribe_to, Event, publish
 from state import State
 from states import MainA, MainB, MainInitial
 
@@ -14,6 +14,8 @@ class Main(State):
         self.state_A: State = MainA()
         self.state_B: State = MainB()
         self.state: State = MainInitial()
+        events = {Events.EV1, Events.EV2, Events.EVAF, Events.EVBF}
+        subscribe_to(events, self.event_queue)
         self.log = logger.init_logging(type(self).__name__)
 
     async def run(self) -> None:
@@ -23,31 +25,31 @@ class Main(State):
 
         while True:
             await asyncio.sleep(DELAY)
-            EV1.set()
+            publish(Events.EV1)
             await asyncio.sleep(DELAY)
-            EV2.set()
+            publish(Events.EV2)
             await asyncio.sleep(DELAY)
-            EV2.set()
+            publish(Events.EV2)
             await asyncio.sleep(DELAY)
-            EV2.set()
+            publish(Events.EV2)
             await asyncio.sleep(DELAY)
-            EV4.set()
+            publish(Events.EV4)
             await asyncio.sleep(DELAY)
-            EV4.set()
+            publish(Events.EV4)
 
     async def manage(self):
         self.log.info("")
         self.state = await self.state.transition_to(self.state_A)
 
         while True:
-            event: Event = await wait_for_any(EV1, EV2, EVAF, EVBF)
+            event: Event = await self.event_queue.get()
             self.log.info(f"{event}")
 
             if self.state == self.state_A:
-                if event in {EV1, EVAF}:
+                if event in {Events.EV1, Events.EVAF}:
                     self.state = await self.state.transition_to(self.state_B)
             elif self.state == self.state_B:
-                if event in {EV2, EVBF}:
+                if event in {Events.EV2, Events.EVBF}:
                     self.state = await self.state.transition_to(self.state_A)   
 
 

@@ -1,5 +1,5 @@
 import asyncio
-from events import Events, subscribe_to, Event
+from events import Events, subscribe_to, Event, publish
 import logger
 from state import State
 
@@ -13,7 +13,7 @@ class MainA(State):
         self.state_AA: State = MainAA()
         self.state_AB: State = MainAB()
         self.state: State = self.initial
-        events = {Events.EV2, Events.EV3}
+        events = {Events.EV1, Events.EV2}
         subscribe_to(events, self.event_queue)
         self.log = logger.init_logging(type(self).__name__)
 
@@ -27,12 +27,12 @@ class MainA(State):
                 self.log.info(f"{event}")
 
                 if self.state == self.state_AA:
-                    if event == Events.EV2:
+                    if event == Events.EV1:
                         self.state = await self.state.transition_to(self.state_AB)
                 elif self.state == self.state_AB:
-                    if event == Events.EV2:
+                    if event == Events.EV1:
                         self.state = await self.state.transition_to(self.final)
-                    elif event == Events.EV3:
+                    elif event == Events.EV2:
                         self.state = await self.state.transition_to(self.state_AA)
 
         except asyncio.CancelledError:
@@ -48,7 +48,7 @@ class MainB(State):
         self.state_BA: State = MainBA()
         self.state_BB: State = MainBB()
         self.state: State = self.initial
-        events = {Events.EV4, Events.EV5}
+        events = {Events.EV3, Events.EV4}
         subscribe_to(events, self.event_queue)
         self.log = logger.init_logging(type(self).__name__)
 
@@ -62,12 +62,12 @@ class MainB(State):
                 self.log.info(f"{event}")
 
                 if self.state == self.state_BA:
-                    if event == Events.EV4:
+                    if event == Events.EV3:
                         self.state = await self.state.transition_to(self.state_BB)
-                    elif event == Events.EV5:
+                    elif event == Events.EV4:
                         self.state = await self.state.transition_to(self.final)
                 elif self.state == self.state_BB:
-                    if event == Events.EV4:
+                    if event == Events.EV3:
                         self.state = await self.state.transition_to(self.final)
 
         except asyncio.CancelledError:
@@ -100,7 +100,7 @@ class MainAFinal(State):
 
     def enter(self) -> None:
         super().enter()
-        EVAF.set()
+        publish(Events.EVAF5)
 
 
 class MainBFinal(State):
@@ -111,7 +111,7 @@ class MainBFinal(State):
 
     def enter(self) -> None:
         super().enter()
-        EVBF.set()
+        publish(Events.EVBF6)
 
 
 class MainAA(State):

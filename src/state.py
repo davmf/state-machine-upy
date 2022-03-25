@@ -29,6 +29,7 @@ class State:
 
     def enter(self) -> None:
         self.log.info("")
+        self._clear_event_queue()
 
     def _exit(self) -> None:
         if self.initial:
@@ -39,7 +40,7 @@ class State:
 
         if self.do_task:
             self.do_task.cancel()
-            await self.do_task
+#            await self.do_task
 
         self._exit()
 
@@ -64,3 +65,7 @@ class State:
                 await asyncio.sleep(1)
         except asyncio.CancelledError:
             pass
+
+    def _clear_event_queue(self) -> None:
+        while not self.event_queue.empty():
+            _ = self.event_queue.get_nowait()

@@ -8,14 +8,14 @@ log = logger.init_logging("Event")
 Event = int
 
 class Events:
-    EV1 = cast(Event, 0)
-    EV2 = cast(Event, 1)
-    EV3 = cast(Event, 2)
-    EV4 = cast(Event, 3)
-    EV5 = cast(Event, 4)
-    EVAF = cast(Event, 5)
-    EVBF = cast(Event, 6)
-    LAST = EVBF
+    EV0 = cast(Event, 0)
+    EV1 = cast(Event, 1)
+    EV2 = cast(Event, 2)
+    EV3 = cast(Event, 3)
+    EV4 = cast(Event, 4)
+    EVAF5 = cast(Event, 5)
+    EVBF6 = cast(Event, 6)
+    LAST = EVBF6
 
 
 _event_subscribers: Dict[Event, Set[Queue[Event]]] = dict()

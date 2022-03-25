@@ -1,5 +1,6 @@
 import asyncio
-from typing import Optional
+from events import Event, Events, subscribe_to, publish
+from typing import Optional, Set
 
 import logger
 
@@ -12,6 +13,7 @@ class State:
         self.do_task = None
         self.manage_task = None
         self.is_final = False
+        self.event_buffer: Set[str] = set()
         self.log = logger.init_logging(type(self).__name__)
 
     async def transition_to(self, new_state: "State") -> "State":

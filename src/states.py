@@ -1,6 +1,5 @@
 import asyncio
-
-from events import EV2, EV3, EV4, EV5, EVAF, EVBF, wait_for_any, Event
+import events
 import logger
 from state import State
 

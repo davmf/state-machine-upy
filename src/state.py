@@ -40,7 +40,11 @@ class State:
 
         if self.do_task:
             self.do_task.cancel()
-#            await self.do_task
+
+            try:
+                await self.do_task
+            except asyncio.CancelledError:
+                pass
 
         self._exit()
 
@@ -55,16 +59,20 @@ class State:
             await self.manage_task
         except asyncio.CancelledError:
             self.manage_task.cancel()
-            await self.manage_task
+
+            try:
+                await self.manage_task
+            except asyncio.CancelledError:
+                raise
 
     async def manage(self) -> None:
         self.log.info("")
 
         try:
             while True:
-                await asyncio.sleep(1)
+                await asyncio.sleep(0)
         except asyncio.CancelledError:
-            pass
+            raise
 
     def _clear_event_queue(self) -> None:
         while not self.event_queue.empty():

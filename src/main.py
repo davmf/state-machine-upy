@@ -17,7 +17,7 @@ class StateMachine(State):
         self.log = logger.init_logging(type(self).__name__)
 
         subscribe_to(
-            {events.EV0, events.EV1, events.EVAF5, events.EVBF6},
+            {events.EV0, events.EV1, events.EVAF, events.EVBF},
             self.event_queue
         )
 
@@ -84,10 +84,10 @@ class StateMachine(State):
             self.log.debug(f"{event}")
 
             if self.state == self.state_A:
-                if (event == events.EV0 and self.guard()) or event == events.EVAF5:
+                if (event == events.EV0 and self.guard()) or event == events.EVAF:
                     self.state = await self.state.transition_to(self.state_B, self.action)
             elif self.state == self.state_B:
-                if (event == events.EV1 and self.guard()) or event == events.EVBF6:
+                if (event == events.EV1 and self.guard()) or event == events.EVBF:
                     self.state = await self.state.transition_to(self.state_A, self.action)   
 
 

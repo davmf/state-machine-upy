@@ -1,130 +1,128 @@
 import asyncio
-from events import Events, subscribe_to, Event, publish
+
+import events
 import logger
-from state import State
+from state_lib.event import Event, publish, subscribe_to
+from state_lib.state import State
 
 
-class MainA(State):
+class S_A(State):
 
     def __init__(self):
-        super().__init__()
-        self.initial: State = MainAInitial()
-        self.final: State = MainAFinal()
-        self.state_AA: State = MainAA()
-        self.state_AB: State = MainAB()
-        self.state: State = self.initial
-        events = {Events.EV1, Events.EV2}
-        subscribe_to(events, self.event_queue)
+        super().__init__(initial=S_Ai(), final=S_Af())
+        self.state_A: State = S_AA()
+        self.state_B: State = S_AB()
+        self.log = logger.init_logging(type(self).__name__)
+        subscribe_to({events.EV1, events.EV2}, self.event_queue)
+
+    async def manage(self):
+        self.log.debug("")
+
+        if self.state and self.final:
+            destination: State = self.history_state if self.history_state else self.state_A
+            self.state = await self.state.transition_to(destination)
+
+            try:
+                while True:
+                    event: Event = await self.event_queue.get()
+                    self.log.debug(f"{event}")
+
+                    if self.state == self.state_A:
+                        if event == events.EV1:
+                            self.state = await self.state.transition_to(self.state_B, self.action)
+                    elif self.state == self.state_B:
+                        if event == events.EV1:
+                            self.state = await self.state.transition_to(self.final, self.action)
+                        elif event == events.EV2:
+                            self.state = await self.state.transition_to(self.state_A, self.action)
+
+            except asyncio.CancelledError:
+                pass
+
+
+class S_B(State):
+
+    def __init__(self):
+        super().__init__(initial=S_Bi(), final=S_Bf(), history=True)
+        self.state_A: State = S_BA()
+        self.state_B: State = S_BB()
+        subscribe_to({events.EV3, events.EV4}, self.event_queue)
         self.log = logger.init_logging(type(self).__name__)
 
     async def manage(self):
-        self.log.info("")
-        self.state = await self.state.transition_to(self.state_AA)
+        self.log.debug("")
 
-        try:
-            while True:
-                event: Event = await self.event_queue.get()
-                self.log.info(f"{event}")
+        if self.state and self.final:
+            destination: State = self.history_state if self.history_state else self.state_A
+            self.state = await self.state.transition_to(destination)
 
-                if self.state == self.state_AA:
-                    if event == Events.EV1:
-                        self.state = await self.state.transition_to(self.state_AB)
-                elif self.state == self.state_AB:
-                    if event == Events.EV1:
-                        self.state = await self.state.transition_to(self.final)
-                    elif event == Events.EV2:
-                        self.state = await self.state.transition_to(self.state_AA)
+            try:
+                while True:
+                    event: Event = await self.event_queue.get()
+                    self.log.debug(f"{event}")
 
-        except asyncio.CancelledError:
-            pass
+                    if self.state == self.state_A:
+                        if event == events.EV3:
+                            self.state = await self.state.transition_to(self.state_B, self.action)
+                        elif event == events.EV4:
+                            self.state = await self.state.transition_to(self.final, self.action)
+                    elif self.state == self.state_B:
+                        if event == events.EV3:
+                            self.state = await self.state.transition_to(self.final, self.action)
 
-
-class MainB(State):
-
-    def __init__(self):
-        super().__init__()
-        self.initial: State = MainBInitial()
-        self.final: State = MainBFinal()
-        self.state_BA: State = MainBA()
-        self.state_BB: State = MainBB()
-        self.state: State = self.initial
-        events = {Events.EV3, Events.EV4}
-        subscribe_to(events, self.event_queue)
-        self.log = logger.init_logging(type(self).__name__)
-
-    async def manage(self):
-        self.log.info("")
-        self.state = await self.state.transition_to(self.state_BA)
-
-        try:
-            while True:
-                event: Event = await self.event_queue.get()
-                self.log.info(f"{event}")
-
-                if self.state == self.state_BA:
-                    if event == Events.EV3:
-                        self.state = await self.state.transition_to(self.state_BB)
-                    elif event == Events.EV4:
-                        self.state = await self.state.transition_to(self.final)
-                elif self.state == self.state_BB:
-                    if event == Events.EV3:
-                        self.state = await self.state.transition_to(self.final)
-
-        except asyncio.CancelledError:
-            pass
+            except asyncio.CancelledError:
+                pass
 
 
-class MainInitial(State):
+class SM_i(State):
 
     def __init__(self):
         super().__init__()
 
 
-class MainAInitial(State):
+class S_Ai(State):
 
     def __init__(self):
         super().__init__()
 
 
-class MainBInitial(State):
+class S_Bi(State):
 
     def __init__(self):
         super().__init__()
 
 
-class MainAFinal(State):
+class S_Af(State):
 
     def __init__(self):
-        super().__init__()
-        self.is_final = True
+        super().__init__(is_final=True)
 
     def enter(self) -> None:
         super().enter()
-        publish(Events.EVAF5)
+        publish(events.EVAF)
 
 
-class MainBFinal(State):
+class S_Bf(State):
 
     def __init__(self):
-        super().__init__()
-        self.is_final = True
+        super().__init__(is_final=True)
 
     def enter(self) -> None:
         super().enter()
-        publish(Events.EVBF6)
+        publish(events.EVBF)
 
 
-class MainAA(State):
+class S_AA(State):
     pass
 
 
-class MainAB(State):
+class S_AB(State):
     pass
 
 
-class MainBA(State):
+class S_BA(State):
     pass
 
 
-class MainBB(State):
+class S_BB(State):
     pass

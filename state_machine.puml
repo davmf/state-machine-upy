@@ -19,7 +19,8 @@ state state_machine {
 
         state state_BB
 
-        [*] --> state_BA
+        [*] --> [H]
+        [H] --> state_BA
         state_BA --> state_BB : EVENT_3
         state_BA --> [*] : EVENT_4
         state_BB --> [*] : EVENT_3
